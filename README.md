@@ -10,8 +10,8 @@ Replaces the player models with a dog model!
 - Ragdolls aren't supported yet.
 
 ## Credits:
-Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
-Originated from a design by EndlessForebode: https://twitter.com/UslurpArt/status/1724137874717573268
+- Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
+- Originated from a design by EndlessForebode: https://twitter.com/UslurpArt/status/1724137874717573268
 
 ## Updates:
 **[0.0.1]**  
