@@ -13,6 +13,11 @@ Replaces the player models with a dog model!
 - Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
 - Originated from a design by EndlessForebode: https://twitter.com/UslurpArt/status/1724137874717573268
 
+![](https://pbs.twimg.com/media/F-1eD_IWYAAwKmh.jpg)
+
 ## Updates:
 **[0.0.1]**  
 - The mod now replaces the model of other players with the dog model. Animations are constraint-based, ragdolls are not supported.
+
+**[0.0.2]**  
+- Added GitHub and updated README.

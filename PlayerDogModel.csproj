@@ -4,7 +4,7 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <AssemblyName>PlayerDogModel</AssemblyName>
         <Description>A mod to replace Player models with a dog for Lethal Company</Description>
-        <Version>0.0.1</Version>
+        <Version>0.0.2</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
