@@ -1,7 +1,7 @@
 
 # It's a dog's life out there, literally!
 
-![](https://imgur.com/gA6h0Qf)
+![](https://imgur.com/gA6h0Qf.png)
 
 ## Features:
 Replaces the player models with a dog model!
