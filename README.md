@@ -5,8 +5,7 @@
 
 ## Features:
 Replaces the player models with a dog model!
-- You will see other players with a dog model instead of a human model.
-- Other players will see you normally if they do not have the mod installed.
+- Use the helmets on the side of the suits rack to switch between dog and human model.
 - Ragdolls aren't supported yet.
 
 ## Credits:
@@ -21,3 +20,6 @@ Replaces the player models with a dog model!
 
 **[0.0.2]**  
 - Added GitHub and updated README.
+
+**[0.1.0]**  
+- Added an interaction in the suits rack to toggle the model on and off!
