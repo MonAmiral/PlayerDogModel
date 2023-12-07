@@ -28,11 +28,14 @@ namespace PlayerDogModel
 		[HarmonyPatch(typeof(PlayerControllerB))]
 		internal class PlayerControllerBPatch
 		{
-			// SpawnPlayerAnimation is called locally when spawning.
+			// SpawnPlayerAnimation is called locally when respawning.
 			[HarmonyPatch("SpawnPlayerAnimation")]
 			[HarmonyPostfix]
 			public static void SpawnPlayerAnimationPatch(ref PlayerControllerB __instance)
 			{
+				Debug.LogWarning("////////////////////////////////////////////////////");
+				Debug.Log($"{__instance.playerUsername}.SpawnPlayerAnimation()");
+
 				// Find all the players and add the script to them if they don't have it yet.
 				// This is done for every player every time a player spawns just to be sure.
 				foreach (GameObject player in StartOfRound.Instance.allPlayerObjects)
@@ -42,6 +45,9 @@ namespace PlayerDogModel
 						player.gameObject.AddComponent<PlayerModelReplacer>();
 					}
 				}
+
+				// Request data regarding the other players' skins.
+				PlayerModelReplacer.RequestSelectedModelBroadcast();
 			}
 		}
 
@@ -58,6 +64,22 @@ namespace PlayerDogModel
 				{
 					GameObject suitHanger = GameObject.Find("NurbsPath.002");
 					suitHanger.AddComponent<PlayerModelSwitcher>();
+				}
+			}
+		}
+
+		[HarmonyPatch(typeof(UnlockableSuit))]
+		internal class UnlockableSuitPatch
+		{
+			// SpawnPlayerAnimation is called locally when switching to a new suit.
+			[HarmonyPatch("SwitchSuitForPlayer")]
+			[HarmonyPostfix]
+			public static void SwitchSuitForPlayerPatch(PlayerControllerB player, int suitID, bool playAudio = true)
+			{
+				PlayerModelReplacer replacer = player.GetComponent<PlayerModelReplacer>();
+				if (replacer)
+				{
+					replacer.UpdateMaterial();
 				}
 			}
 		}

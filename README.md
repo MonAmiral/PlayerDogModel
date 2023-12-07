@@ -6,7 +6,8 @@
 ## Features:
 Replaces the player models with a dog model!
 - Use the helmets on the side of the suits rack to switch between dog and human model.
-- Ragdolls aren't supported yet.
+- The mod should work in multiplayer with players who do not have it.
+- Ragdolls are not supported yet.
 
 ## Credits:
 - Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
@@ -23,3 +24,12 @@ Replaces the player models with a dog model!
 
 **[0.1.0]**  
 - Added an interaction in the suits rack to toggle the model on and off!
+
+**[0.2.0]**  
+- Fixed other players not having the right model when you join an game.
+- Added support for different suits.
+- Added ladder "animation".
+- Adjusted held item position (key, clipboard and some specific other items might not work well).
+- Adjusted crouching animation.
+- Added ragdoll support.
+- Fixed Terminal not being usable when in dog form.

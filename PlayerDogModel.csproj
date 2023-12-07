@@ -4,7 +4,7 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <AssemblyName>PlayerDogModel</AssemblyName>
         <Description>A mod to replace Player models with a dog for Lethal Company</Description>
-        <Version>0.1.0</Version>
+        <Version>0.2.1</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
@@ -27,6 +27,9 @@
 	</Reference>
 	<Reference Include="UnityEngine">
 	  <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.dll</HintPath>
+	</Reference>
+	<Reference Include="UnityEngine.UI">
+	  <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.UI.dll</HintPath>
 	</Reference>
 	<Reference Include="UnityEngine.AnimationModule">
 	  <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>

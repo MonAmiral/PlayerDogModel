@@ -1,6 +1,7 @@
 using GameNetcodeStuff;
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Animations;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
@@ -14,28 +15,56 @@ namespace PlayerDogModel
 {
 	public class PlayerModelReplacer : MonoBehaviour
 	{
+		public static PlayerModelReplacer LocalReplacer;
+
+		private static bool loaded;
+
 		private PlayerControllerB playerController;
 		private GameObject dogGameObject;
+		private GameObject[] humanGameObjects;
+		private SkinnedMeshRenderer dogRenderer;
 		private LODGroup lodGroup;
 
-		private AudioClip humanClip, dogClip;
+		private Transform dogTorso;
+		private PositionConstraint torsoConstraint;
+
+		private static AudioClip humanClip, dogClip;
 
 		private Vector3 humanCameraPosition;
+		private Transform localItemAnchor, serverItemAnchor;
+
+		private static Image healthFill, healthOutline;
+		private static Sprite humanFill, humanOutline, dogFill, dogOutline;
+
+		private bool isDogActive;
+
+		private void Awake()
+		{
+			if (!PlayerModelReplacer.loaded)
+			{
+				PlayerModelReplacer.loaded = true;
+				PlayerModelReplacer.LoadImageResources();
+				this.StartCoroutine(PlayerModelReplacer.LoadAudioResources());
+			}
+		}
 
 		private void Start()
 		{
 			this.playerController = this.GetComponent<PlayerControllerB>();
+			if (this.playerController.IsLocalPlayer)
+			{
+				PlayerModelReplacer.LocalReplacer = this;
+			}
+
 			this.humanCameraPosition = this.playerController.gameplayCamera.transform.localPosition;
+
+			Debug.LogWarning("////////////////////////////////////////////////////");
+			Debug.Log($"Adding PlayerModelReplacer on {this.playerController.playerUsername} ({this.playerController.IsLocalPlayer})");
 
 			this.lodGroup = this.GetComponentInChildren<LODGroup>();
 
 			this.SpawnDogModel();
 			this.EnableHumanModel(false);
-
-			this.humanClip = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<AudioClip>("assets/changesuittohuman.wav");
-			this.dogClip = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<AudioClip>("assets/changesuittodog.wav");
-
-			this.StartCoroutine(this.RetrieveAudio());
 
 			Networking.GetString += this.Networking_GetString;
 		}
@@ -44,7 +73,7 @@ namespace PlayerDogModel
 		{
 			// Adjust camera height.
 			Vector3 cameraPositionGoal = this.humanCameraPosition;
-			if (this.dogGameObject.activeSelf)
+			if (this.isDogActive && !this.playerController.inTerminalMenu)
 			{
 				if (!this.playerController.isCrouching)
 				{
@@ -57,6 +86,40 @@ namespace PlayerDogModel
 			}
 
 			this.playerController.gameplayCamera.transform.localPosition = Vector3.MoveTowards(this.playerController.gameplayCamera.transform.localPosition, cameraPositionGoal, Time.deltaTime * 2);
+
+			// Adjust position constraint to avoid going through the floor.
+			if (this.playerController.isCrouching)
+			{
+				this.torsoConstraint.weight = Mathf.MoveTowards(this.torsoConstraint.weight, 0.5f, Time.deltaTime * 3);
+			}
+			else
+			{
+				this.torsoConstraint.weight = Mathf.MoveTowards(this.torsoConstraint.weight, 1f, Time.deltaTime * 3);
+			}
+
+			// Adjust torso rotation for climbing animation.
+			if (this.playerController.isClimbingLadder)
+			{
+				this.dogTorso.localRotation = Quaternion.RotateTowards(this.dogTorso.localRotation, Quaternion.Euler(90, 0, 0), Time.deltaTime * 360);
+			}
+			else
+			{
+				this.dogTorso.localRotation = Quaternion.RotateTowards(this.dogTorso.localRotation, Quaternion.Euler(180, 0, 0), Time.deltaTime * 360);
+			}
+		}
+
+		private void LateUpdate()
+		{
+			// Update the location of the item anchor.
+			if (this.isDogActive)
+			{
+				this.playerController.localItemHolder.position = this.localItemAnchor.position;
+				this.playerController.serverItemHolder.position = this.serverItemAnchor.position;
+			}
+			else
+			{
+				// Set by the animation, easy!
+			}
 		}
 
 		private void SpawnDogModel()
@@ -68,20 +131,20 @@ namespace PlayerDogModel
 			this.dogGameObject.transform.eulerAngles = this.transform.eulerAngles;
 			this.dogGameObject.transform.localScale *= 2f;
 
-			// Copy the material.
-			SkinnedMeshRenderer LOD1 = this.playerController.thisPlayerModel;
-			foreach (SkinnedMeshRenderer renderer in this.dogGameObject.GetComponentsInChildren<SkinnedMeshRenderer>())
-			{
-				renderer.material = LOD1.material;
-			}
+			// Copy the material. Note: this is also changed in the Update.
+			this.dogRenderer = this.dogGameObject.GetComponentInChildren<SkinnedMeshRenderer>();
+			this.dogRenderer.material = this.playerController.thisPlayerModel.material;
+
+			// Make sure the shadow casting mode is the same. Still don't know how the player is visible in cameras but not in first person. It's not a layer thing, maybe it's the LOD?
+			this.dogRenderer.shadowCastingMode = this.playerController.thisPlayerModel.shadowCastingMode;
 
 			// Set up the anim correspondence with Constraints.
-			Transform dogTorso = this.dogGameObject.transform.Find("Armature").Find("torso");
-			Transform dogHead = dogTorso.Find("head");
-			Transform dogArmL = dogTorso.Find("arm.L");
-			Transform dogArmR = dogTorso.Find("arm.R");
-			Transform dogLegL = dogTorso.Find("butt").Find("leg.L");
-			Transform dogLegR = dogTorso.Find("butt").Find("leg.R");
+			this.dogTorso = this.dogGameObject.transform.Find("Armature").Find("torso");
+			Transform dogHead = this.dogTorso.Find("head");
+			Transform dogArmL = this.dogTorso.Find("arm.L");
+			Transform dogArmR = this.dogTorso.Find("arm.R");
+			Transform dogLegL = this.dogTorso.Find("butt").Find("leg.L");
+			Transform dogLegR = this.dogTorso.Find("butt").Find("leg.R");
 
 			Transform humanPelvis = this.transform.Find("ScavengerModel").Find("metarig").Find("spine");
 			Transform humanHead = humanPelvis.Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
@@ -89,14 +152,14 @@ namespace PlayerDogModel
 			Transform humanLegR = humanPelvis.Find("thigh.R");
 
 			// Add Constraints.
-			// Note: the rotation offsets are not set because the model starts with the same rotation as the associated bones. Gotta add actual animations.
-			PositionConstraint torsoConstraint = dogTorso.gameObject.AddComponent<PositionConstraint>();
-			torsoConstraint.AddSource(new ConstraintSource() { sourceTransform = humanPelvis, weight = 1 });
-			torsoConstraint.translationAtRest = dogTorso.localPosition;
-			torsoConstraint.translationOffset = dogTorso.InverseTransformPoint(humanPelvis.position);
-			torsoConstraint.constraintActive = true;
-			torsoConstraint.locked = true;
+			this.torsoConstraint = this.dogTorso.gameObject.AddComponent<PositionConstraint>();
+			this.torsoConstraint.AddSource(new ConstraintSource() { sourceTransform = humanPelvis, weight = 1 });
+			this.torsoConstraint.translationAtRest = this.dogTorso.localPosition;
+			this.torsoConstraint.translationOffset = this.dogTorso.InverseTransformPoint(humanPelvis.position);
+			this.torsoConstraint.constraintActive = true;
+			this.torsoConstraint.locked = true;
 
+			// Note: the rotation offsets are not set because the model bones have the same rotation as the associated bones.
 			RotationConstraint headConstraint = dogHead.gameObject.AddComponent<RotationConstraint>();
 			headConstraint.AddSource(new ConstraintSource() { sourceTransform = humanHead, weight = 1 });
 			headConstraint.rotationAtRest = dogHead.localEulerAngles;
@@ -126,50 +189,85 @@ namespace PlayerDogModel
 			legRConstraint.rotationAtRest = dogLegR.localEulerAngles;
 			legRConstraint.constraintActive = true;
 			legRConstraint.locked = true;
+
+			// Fetch the anchors for the items.
+			this.serverItemAnchor = dogHead.Find("serverItem");
+			this.localItemAnchor = dogHead.Find("localItem");
+
+			// Get a handy list of gameobjects to disable.
+			this.humanGameObjects = new GameObject[6];
+			this.humanGameObjects[0] = this.playerController.thisPlayerModel.gameObject;
+			this.humanGameObjects[1] = this.playerController.thisPlayerModelLOD1.gameObject;
+			this.humanGameObjects[2] = this.playerController.thisPlayerModelLOD2.gameObject;
+			this.humanGameObjects[3] = this.playerController.thisPlayerModelArms.gameObject;
+			this.humanGameObjects[4] = this.playerController.playerBetaBadgeMesh.gameObject;
+			this.humanGameObjects[5] = this.playerController.playerBetaBadgeMesh.transform.parent.Find("LevelSticker").gameObject;
 		}
 
 		private void EnableHumanModel(bool playAudio = true)
 		{
+			this.isDogActive = false;
+
 			// Dog can be completely disabled because it doesn't drive the animations and sounds and other stuff.
 			this.dogGameObject.SetActive(false);
 
 			// Human renderers have to be directly disabled: the game object contains the camera and stuff and must remain enabled.
 			this.lodGroup.enabled = true;
-			this.playerController.thisPlayerModel.enabled = true;
-			this.playerController.thisPlayerModelLOD1.enabled = true;
-			this.playerController.thisPlayerModelLOD2.enabled = true;
-
-			this.playerController.playerBetaBadgeMesh.gameObject.SetActive(true);
-			this.playerController.playerBetaBadgeMesh.transform.parent.Find("LevelSticker").gameObject.SetActive(true);
+			foreach (GameObject humanGameObject in this.humanGameObjects)
+			{
+				humanGameObject.SetActive(true);
+			}
 
 			if (playAudio)
 			{
-				this.playerController.movementAudio.PlayOneShot(this.humanClip);
+				this.playerController.movementAudio.PlayOneShot(PlayerModelReplacer.humanClip);
+			}
+
+			if (PlayerModelReplacer.healthFill)
+			{
+				PlayerModelReplacer.healthFill.sprite = PlayerModelReplacer.humanFill;
+				PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.humanOutline;
 			}
 		}
 
 		private void EnableDogModel(bool playAudio = true)
 		{
+			this.isDogActive = true;
+
 			this.dogGameObject.SetActive(true);
-			this.dogGameObject.GetComponentInChildren<Renderer>().shadowCastingMode = this.playerController.thisPlayerModel.shadowCastingMode;
 
 			this.lodGroup.enabled = false;
-			this.playerController.thisPlayerModel.enabled = false;
-			this.playerController.thisPlayerModelLOD1.enabled = false;
-			this.playerController.thisPlayerModelLOD2.enabled = false;
-
-			this.playerController.playerBetaBadgeMesh.gameObject.SetActive(false);
-			this.playerController.playerBetaBadgeMesh.transform.parent.Find("LevelSticker").gameObject.SetActive(false);
+			foreach (GameObject humanGameObject in this.humanGameObjects)
+			{
+				humanGameObject.SetActive(false);
+			}
 
 			if (playAudio)
 			{
-				this.playerController.movementAudio.PlayOneShot(this.dogClip);
+				this.playerController.movementAudio.PlayOneShot(PlayerModelReplacer.dogClip);
 			}
+
+			if (!PlayerModelReplacer.healthFill)
+			{
+				PlayerModelReplacer.healthFill = HUDManager.Instance.selfRedCanvasGroup.GetComponent<Image>();
+				PlayerModelReplacer.healthOutline = HUDManager.Instance.selfRedCanvasGroup.transform.parent.Find("Self").GetComponent<Image>();
+
+				PlayerModelReplacer.humanFill = PlayerModelReplacer.healthFill.sprite;
+				PlayerModelReplacer.humanOutline = PlayerModelReplacer.healthOutline.sprite;
+			}
+
+			PlayerModelReplacer.healthFill.sprite = PlayerModelReplacer.dogFill;
+			PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.dogOutline;
 		}
 
-		public void ToggleAndBroadcast()
+		public void UpdateMaterial()
 		{
-			if (this.dogGameObject.activeSelf)
+			this.dogRenderer.material = this.playerController.thisPlayerModel.material;
+		}
+
+		public void ToggleAndBroadcast(bool playAudio = true)
+		{
+			if (this.isDogActive)
 			{
 				this.EnableHumanModel();
 			}
@@ -178,46 +276,47 @@ namespace PlayerDogModel
 				this.EnableDogModel();
 			}
 
+			this.BroadcastSelectedModel(playAudio);
+		}
+
+		public void BroadcastSelectedModel(bool playAudio)
+		{
+			Debug.LogWarning("////////////////////////////////////////////////////");
+			Debug.Log($"Sent dog={this.isDogActive} on {this.playerController.playerUsername}.");
+
 			ToggleData data = new ToggleData()
 			{
 				owner = this.playerController.playerUsername,
-				isDog = this.dogGameObject.activeSelf,
+				isDog = this.isDogActive,
+				playAudio = playAudio,
 			};
 
-			Networking.Broadcast(JsonConvert.SerializeObject(data), "playerdogmodel");
+			Networking.Broadcast(JsonConvert.SerializeObject(data), "modelswitch");
 		}
 
-		private void Networking_GetString(string data, string signature)
+		public static void RequestSelectedModelBroadcast()
 		{
-			if (signature != "playerdogmodel")
-			{
-				return;
-			}
-
-			ToggleData toggleData = JsonConvert.DeserializeObject<ToggleData>(data);
-			if (this.playerController.playerUsername == toggleData.owner)
-			{
-				if (toggleData.isDog)
-				{
-					this.EnableDogModel(true);
-				}
-				else
-				{
-					this.EnableHumanModel(true);
-				}
-			}
+			Networking.Broadcast("hello this is dog", "modelinfo");
 		}
 
-		private IEnumerator RetrieveAudio()
+		private static void LoadImageResources()
+		{
+			Texture2D filled = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<Texture2D>("assets/TPoseFilled.png");
+			PlayerModelReplacer.dogFill = Sprite.Create(filled, new Rect(0, 0, filled.width, filled.height), new Vector2(0.5f, 0.5f), 100f);
+
+			Texture2D outline = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<Texture2D>("assets/TPoseOutline.png");
+			PlayerModelReplacer.dogOutline = Sprite.Create(outline, new Rect(0, 0, outline.width, outline.height), new Vector2(0.5f, 0.5f), 100f);
+		}
+
+		private static IEnumerator LoadAudioResources()
 		{
 			string fullPath = GetAssemblyFullPath("ChangeSuitToHuman.wav");
-			Debug.Log(fullPath);
 			UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(fullPath, AudioType.WAV);
 			yield return request.SendWebRequest();
 			if (request.error == null)
 			{
-				this.humanClip = DownloadHandlerAudioClip.GetContent(request);
-				this.humanClip.name = Path.GetFileName(fullPath);
+				PlayerModelReplacer.humanClip = DownloadHandlerAudioClip.GetContent(request);
+				PlayerModelReplacer.humanClip.name = Path.GetFileName(fullPath);
 			}
 
 			fullPath = GetAssemblyFullPath("ChangeSuitToDog.wav");
@@ -225,8 +324,8 @@ namespace PlayerDogModel
 			yield return request.SendWebRequest();
 			if (request.error == null)
 			{
-				this.dogClip = DownloadHandlerAudioClip.GetContent(request);
-				this.dogClip.name = Path.GetFileName(fullPath);
+				PlayerModelReplacer.dogClip = DownloadHandlerAudioClip.GetContent(request);
+				PlayerModelReplacer.dogClip.name = Path.GetFileName(fullPath);
 			}
 		}
 
@@ -235,6 +334,43 @@ namespace PlayerDogModel
 			string directoryName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 			string path = ((additionalPath != null) ? Path.Combine(directoryName, ".\\" + additionalPath) : directoryName);
 			return Path.GetFullPath(path);
+		}
+
+		private void Networking_GetString(string data, string signature)
+		{
+			Debug.LogWarning("////////////////////////////////////////////////////");
+			Debug.Log($"Received data with signature {signature}");
+
+			switch (signature)
+			{
+				case "modelswitch":
+					if (!this.dogGameObject)
+					{
+						Debug.LogError("Dog is unset. Can't toggle it.");
+						return;
+					}
+
+					ToggleData toggleData = JsonConvert.DeserializeObject<ToggleData>(data);
+					if (this.playerController.playerUsername == toggleData.owner)
+					{
+						Debug.Log($"Received dog={toggleData.isDog} for {this.playerController.playerUsername}.");
+
+						if (toggleData.isDog)
+						{
+							this.EnableDogModel(toggleData.playAudio);
+						}
+						else
+						{
+							this.EnableHumanModel(toggleData.playAudio);
+						}
+					}
+
+					break;
+
+				case "modelinfo":
+					this.BroadcastSelectedModel(false);
+					break;
+			}
 		}
 
 		[JsonObject]
@@ -249,6 +385,13 @@ namespace PlayerDogModel
 
 			[JsonProperty]
 			public bool isDog
+			{
+				get;
+				set;
+			}
+
+			[JsonProperty]
+			public bool playAudio
 			{
 				get;
 				set;
