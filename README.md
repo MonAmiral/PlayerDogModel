@@ -33,3 +33,6 @@ Replaces the player models with a dog model!
 - Adjusted crouching animation.
 - Added ragdoll support.
 - Fixed Terminal not being usable when in dog form.
+
+**[0.2.1]** 
+- Fixed memory leak.
