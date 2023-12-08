@@ -36,3 +36,11 @@ Replaces the player models with a dog model!
 
 **[0.2.1]** 
 - Fixed memory leak.
+
+**[0.3.0]** 
+- Added ragdoll support!
+- Added LODs.
+- Fixed model not being visible in ship cameras.
+
+**[0.3.1]** 
+- Removed test code showing a sphere at a random position.

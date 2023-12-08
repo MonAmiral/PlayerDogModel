@@ -13,6 +13,9 @@ using Newtonsoft.Json;
 
 namespace PlayerDogModel
 {
+	// By default, LateUpdate is called in a chaotic order: GrabbableObject can execute it before or after PlayerModelReplacer.
+	// Forcing the Execution Order to this value will ensure PlayerModelReplacer updates the anchor first and THEN only the GrabbableObject will update its position.
+	[DefaultExecutionOrder(-1)]
 	public class PlayerModelReplacer : MonoBehaviour
 	{
 		public static PlayerModelReplacer LocalReplacer;
@@ -22,8 +25,7 @@ namespace PlayerDogModel
 		private PlayerControllerB playerController;
 		private GameObject dogGameObject;
 		private GameObject[] humanGameObjects;
-		private SkinnedMeshRenderer dogRenderer;
-		private LODGroup lodGroup;
+		private SkinnedMeshRenderer[] dogRenderers;
 
 		private Transform dogTorso;
 		private PositionConstraint torsoConstraint;
@@ -37,6 +39,14 @@ namespace PlayerDogModel
 		private static Sprite humanFill, humanOutline, dogFill, dogOutline;
 
 		private bool isDogActive;
+
+		public bool IsDog
+		{
+			get
+			{
+				return this.isDogActive;
+			}
+		}
 
 		private void Awake()
 		{
@@ -58,10 +68,7 @@ namespace PlayerDogModel
 
 			this.humanCameraPosition = this.playerController.gameplayCamera.transform.localPosition;
 
-			Debug.LogWarning("////////////////////////////////////////////////////");
 			Debug.Log($"Adding PlayerModelReplacer on {this.playerController.playerUsername} ({this.playerController.IsLocalPlayer})");
-
-			this.lodGroup = this.GetComponentInChildren<LODGroup>();
 
 			this.SpawnDogModel();
 			this.EnableHumanModel(false);
@@ -73,7 +80,7 @@ namespace PlayerDogModel
 		{
 			// Adjust camera height.
 			Vector3 cameraPositionGoal = this.humanCameraPosition;
-			if (this.isDogActive && !this.playerController.inTerminalMenu)
+			if (this.isDogActive && !this.playerController.inTerminalMenu && !this.playerController.inSpecialInteractAnimation)
 			{
 				if (!this.playerController.isCrouching)
 				{
@@ -106,19 +113,44 @@ namespace PlayerDogModel
 			{
 				this.dogTorso.localRotation = Quaternion.RotateTowards(this.dogTorso.localRotation, Quaternion.Euler(180, 0, 0), Time.deltaTime * 360);
 			}
+
+			////// Kill hack for Ragdoll testing purposes.
+			////if (!this.playerController.isPlayerDead)
+			////{
+			////	if (UnityEngine.InputSystem.Keyboard.current.numpad0Key.wasPressedThisFrame)
+			////	{
+			////		Debug.Log("Trying to kill player.");
+			////		this.playerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 0);
+			////	}
+
+			////	if (UnityEngine.InputSystem.Keyboard.current.numpad1Key.wasPressedThisFrame)
+			////	{
+			////		Debug.Log("Trying to kill player (1).");
+			////		this.playerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 1);
+			////	}
+
+			////	if (UnityEngine.InputSystem.Keyboard.current.numpad2Key.wasPressedThisFrame)
+			////	{
+			////		Debug.Log("Trying to kill player (springman).");
+			////		this.playerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 2);
+			////	}
+
+			////	if (UnityEngine.InputSystem.Keyboard.current.numpad3Key.wasPressedThisFrame)
+			////	{
+			////		Debug.Log("Trying to kill player (electrocution).");
+			////		this.playerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 3);
+			////	}
+			////}
 		}
 
 		private void LateUpdate()
 		{
-			// Update the location of the item anchor.
+			// Update the location of the item anchor. This is reset by animation between every Update and LateUpate.
+			// Thanks to the DefaultExecutionOrder attribute we know it'll be executed BEFORE the GrabbableObject.LateUpdate().
 			if (this.isDogActive)
 			{
 				this.playerController.localItemHolder.position = this.localItemAnchor.position;
 				this.playerController.serverItemHolder.position = this.serverItemAnchor.position;
-			}
-			else
-			{
-				// Set by the animation, easy!
 			}
 		}
 
@@ -132,11 +164,16 @@ namespace PlayerDogModel
 			this.dogGameObject.transform.localScale *= 2f;
 
 			// Copy the material. Note: this is also changed in the Update.
-			this.dogRenderer = this.dogGameObject.GetComponentInChildren<SkinnedMeshRenderer>();
-			this.dogRenderer.material = this.playerController.thisPlayerModel.material;
+			this.dogRenderers = this.dogGameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
+			this.UpdateMaterial();
 
-			// Make sure the shadow casting mode is the same. Still don't know how the player is visible in cameras but not in first person. It's not a layer thing, maybe it's the LOD?
-			this.dogRenderer.shadowCastingMode = this.playerController.thisPlayerModel.shadowCastingMode;
+			// Enable LOD. This is both for performances and being visible in cameras. Values are simply copied from the human LOD.
+			LODGroup lodGroup = this.dogGameObject.AddComponent<LODGroup>();
+			lodGroup.fadeMode = LODFadeMode.None;
+			LOD lod1 = new LOD() { screenRelativeTransitionHeight = 0.4564583f, renderers = new Renderer[] { this.dogRenderers[0] }, fadeTransitionWidth = 0f };
+			LOD lod2 = new LOD() { screenRelativeTransitionHeight = 0.1795709f, renderers = new Renderer[] { this.dogRenderers[1] }, fadeTransitionWidth = 0f };
+			LOD lod3 = new LOD() { screenRelativeTransitionHeight = 0.009000001f, renderers = new Renderer[] { this.dogRenderers[2] }, fadeTransitionWidth = 0.435f };
+			lodGroup.SetLODs(new LOD[] { lod1, lod2, lod3 });
 
 			// Set up the anim correspondence with Constraints.
 			this.dogTorso = this.dogGameObject.transform.Find("Armature").Find("torso");
@@ -212,7 +249,6 @@ namespace PlayerDogModel
 			this.dogGameObject.SetActive(false);
 
 			// Human renderers have to be directly disabled: the game object contains the camera and stuff and must remain enabled.
-			this.lodGroup.enabled = true;
 			foreach (GameObject humanGameObject in this.humanGameObjects)
 			{
 				humanGameObject.SetActive(true);
@@ -236,7 +272,9 @@ namespace PlayerDogModel
 
 			this.dogGameObject.SetActive(true);
 
-			this.lodGroup.enabled = false;
+			// Make sure the shadow casting mode is the same. Still don't know how the player is visible in cameras but not in first person. It's not a layer thing, maybe it's the LOD?
+			this.dogRenderers[0].shadowCastingMode = this.playerController.thisPlayerModel.shadowCastingMode;
+
 			foreach (GameObject humanGameObject in this.humanGameObjects)
 			{
 				humanGameObject.SetActive(false);
@@ -262,7 +300,10 @@ namespace PlayerDogModel
 
 		public void UpdateMaterial()
 		{
-			this.dogRenderer.material = this.playerController.thisPlayerModel.material;
+			foreach (Renderer renderer in this.dogRenderers)
+			{
+				renderer.material = this.playerController.thisPlayerModel.material;
+			}
 		}
 
 		public void ToggleAndBroadcast(bool playAudio = true)
@@ -281,7 +322,6 @@ namespace PlayerDogModel
 
 		public void BroadcastSelectedModel(bool playAudio)
 		{
-			Debug.LogWarning("////////////////////////////////////////////////////");
 			Debug.Log($"Sent dog={this.isDogActive} on {this.playerController.playerUsername}.");
 
 			ToggleData data = new ToggleData()
@@ -338,9 +378,6 @@ namespace PlayerDogModel
 
 		private void Networking_GetString(string data, string signature)
 		{
-			Debug.LogWarning("////////////////////////////////////////////////////");
-			Debug.Log($"Received data with signature {signature}");
-
 			switch (signature)
 			{
 				case "modelswitch":
