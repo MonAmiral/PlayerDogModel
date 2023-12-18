@@ -62,14 +62,14 @@ namespace PlayerDogModel
 		private void Start()
 		{
 			this.playerController = this.GetComponent<PlayerControllerB>();
-			if (this.playerController.IsLocalPlayer)
+			if (this.playerController.IsOwner)
 			{
 				PlayerModelReplacer.LocalReplacer = this;
 			}
 
 			this.humanCameraPosition = this.playerController.gameplayCamera.transform.localPosition;
 
-			Debug.Log($"Adding PlayerModelReplacer on {this.playerController.playerUsername} ({this.playerController.IsLocalPlayer})");
+			Debug.Log($"Adding PlayerModelReplacer on {this.playerController.playerUsername} ({this.playerController.IsOwner})");
 
 			this.SpawnDogModel();
 			this.EnableHumanModel(false);
@@ -176,10 +176,6 @@ namespace PlayerDogModel
 				Debug.Log($"Dog model is on the wrong layer. ({LayerMask.LayerToName(this.dogRenderers[0].gameObject.layer)} instead of {LayerMask.LayerToName(this.playerController.thisPlayerModel.gameObject.layer)})");
 				this.dogRenderers[0].gameObject.layer = this.playerController.thisPlayerModel.gameObject.layer;
 			}
-		}
-
-		private void OnGUI()
-		{
 		}
 
 		private void SpawnDogModel()
@@ -331,7 +327,7 @@ namespace PlayerDogModel
 				this.playerController.movementAudio.PlayOneShot(PlayerModelReplacer.humanClip);
 			}
 
-			if (this.playerController.IsLocalPlayer)
+			if (this.playerController.IsOwner)
 			{
 				if (PlayerModelReplacer.healthFill)
 				{
@@ -360,7 +356,7 @@ namespace PlayerDogModel
 				this.playerController.movementAudio.PlayOneShot(PlayerModelReplacer.dogClip);
 			}
 
-			if (this.playerController.IsLocalPlayer)
+			if (this.playerController.IsOwner)
 			{
 				if (!PlayerModelReplacer.healthFill)
 				{

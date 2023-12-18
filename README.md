@@ -52,3 +52,7 @@ Replaces the player models with a dog model!
 - Added compatibility with 3rd person & mirror.
 - Fixed UI health icon changing for everyone instead of the dog player.
 - Fixed error spam in the log. Improved logs in general for more clarity.
+
+**[1.0.0]**
+- Complete release!
+- Fixed UI issue.
