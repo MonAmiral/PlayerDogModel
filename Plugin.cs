@@ -35,9 +35,6 @@ namespace PlayerDogModel
 			[HarmonyPostfix]
 			public static void SpawnPlayerAnimationPatch(ref PlayerControllerB __instance)
 			{
-				Debug.LogWarning("////////////////////////////////////////////////////");
-				Debug.Log($"{__instance.playerUsername}.SpawnPlayerAnimation()");
-
 				// Find all the players and add the script to them if they don't have it yet.
 				// This is done for every player every time a player spawns just to be sure.
 				foreach (GameObject player in StartOfRound.Instance.allPlayerObjects)

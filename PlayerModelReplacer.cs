@@ -19,8 +19,9 @@ namespace PlayerDogModel
 	public class PlayerModelReplacer : MonoBehaviour
 	{
 		public static PlayerModelReplacer LocalReplacer;
-
 		private static bool loaded;
+		private static string exceptionMessage;
+		private static System.Exception exception;
 
 		private PlayerControllerB playerController;
 		private GameObject dogGameObject;
@@ -78,6 +79,11 @@ namespace PlayerDogModel
 
 		private void Update()
 		{
+			if (!string.IsNullOrEmpty(PlayerModelReplacer.exceptionMessage))
+			{
+				return;
+			}
+
 			// Adjust camera height.
 			Vector3 cameraPositionGoal = this.humanCameraPosition;
 			if (this.isDogActive && !this.playerController.inTerminalMenu && !this.playerController.inSpecialInteractAnimation)
@@ -145,6 +151,11 @@ namespace PlayerDogModel
 
 		private void LateUpdate()
 		{
+			if (this.localItemAnchor == null || this.serverItemAnchor == null)
+			{
+				return;
+			}
+
 			// Update the location of the item anchor. This is reset by animation between every Update and LateUpate.
 			// Thanks to the DefaultExecutionOrder attribute we know it'll be executed BEFORE the GrabbableObject.LateUpdate().
 			if (this.isDogActive)
@@ -152,84 +163,145 @@ namespace PlayerDogModel
 				this.playerController.localItemHolder.position = this.localItemAnchor.position;
 				this.playerController.serverItemHolder.position = this.serverItemAnchor.position;
 			}
+
+			// Make sure the shadow casting mode and layer are right despite other mods.
+			if (this.dogRenderers[0].shadowCastingMode != this.playerController.thisPlayerModel.shadowCastingMode)
+			{
+				Debug.Log($"Dog model is on the wrong shadow casting mode. ({this.dogRenderers[0].shadowCastingMode} instead of {this.playerController.thisPlayerModel.shadowCastingMode})");
+				this.dogRenderers[0].shadowCastingMode = this.playerController.thisPlayerModel.shadowCastingMode;
+			}
+
+			if (this.dogRenderers[0].gameObject.layer != this.playerController.thisPlayerModel.gameObject.layer)
+			{
+				Debug.Log($"Dog model is on the wrong layer. ({LayerMask.LayerToName(this.dogRenderers[0].gameObject.layer)} instead of {LayerMask.LayerToName(this.playerController.thisPlayerModel.gameObject.layer)})");
+				this.dogRenderers[0].gameObject.layer = this.playerController.thisPlayerModel.gameObject.layer;
+			}
+		}
+
+		private void OnGUI()
+		{
 		}
 
 		private void SpawnDogModel()
 		{
-			// Load and spawn new model.
-			GameObject modelPrefab = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<GameObject>("assets/Dog.fbx");
-			this.dogGameObject = Instantiate(modelPrefab, this.transform);
-			this.dogGameObject.transform.position = this.transform.position;
-			this.dogGameObject.transform.eulerAngles = this.transform.eulerAngles;
-			this.dogGameObject.transform.localScale *= 2f;
+			try
+			{
+				// Load and spawn new model.
+				GameObject modelPrefab = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<GameObject>("assets/Dog.fbx");
+				this.dogGameObject = Instantiate(modelPrefab, this.transform);
+				this.dogGameObject.transform.position = this.transform.position;
+				this.dogGameObject.transform.eulerAngles = this.transform.eulerAngles;
+				this.dogGameObject.transform.localScale *= 2f;
+			}
+			catch (System.Exception e)
+			{
+				PlayerModelReplacer.exceptionMessage = "Failed to spawn dog model.";
+				PlayerModelReplacer.exception = e;
+
+				Debug.LogError(PlayerModelReplacer.exceptionMessage);
+				Debug.LogException(PlayerModelReplacer.exception);
+			}
 
 			// Copy the material. Note: this is also changed in the Update.
 			this.dogRenderers = this.dogGameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
 			this.UpdateMaterial();
 
-			// Enable LOD. This is both for performances and being visible in cameras. Values are simply copied from the human LOD.
-			LODGroup lodGroup = this.dogGameObject.AddComponent<LODGroup>();
-			lodGroup.fadeMode = LODFadeMode.None;
-			LOD lod1 = new LOD() { screenRelativeTransitionHeight = 0.4564583f, renderers = new Renderer[] { this.dogRenderers[0] }, fadeTransitionWidth = 0f };
-			LOD lod2 = new LOD() { screenRelativeTransitionHeight = 0.1795709f, renderers = new Renderer[] { this.dogRenderers[1] }, fadeTransitionWidth = 0f };
-			LOD lod3 = new LOD() { screenRelativeTransitionHeight = 0.009000001f, renderers = new Renderer[] { this.dogRenderers[2] }, fadeTransitionWidth = 0.435f };
-			lodGroup.SetLODs(new LOD[] { lod1, lod2, lod3 });
+			try
+			{
+				// Enable LOD. This is both for performances and being visible in cameras. Values are simply copied from the human LOD.
+				LODGroup lodGroup = this.dogGameObject.AddComponent<LODGroup>();
+				lodGroup.fadeMode = LODFadeMode.None;
+				LOD lod1 = new LOD() { screenRelativeTransitionHeight = 0.4564583f, renderers = new Renderer[] { this.dogRenderers[0] }, fadeTransitionWidth = 0f };
+				LOD lod2 = new LOD() { screenRelativeTransitionHeight = 0.1795709f, renderers = new Renderer[] { this.dogRenderers[1] }, fadeTransitionWidth = 0f };
+				LOD lod3 = new LOD() { screenRelativeTransitionHeight = 0.009000001f, renderers = new Renderer[] { this.dogRenderers[2] }, fadeTransitionWidth = 0.435f };
+				lodGroup.SetLODs(new LOD[] { lod1, lod2, lod3 });
+			}
+			catch (System.Exception e)
+			{
+				PlayerModelReplacer.exceptionMessage = "Failed to set up the LOD.";
+				PlayerModelReplacer.exception = e;
 
-			// Set up the anim correspondence with Constraints.
-			this.dogTorso = this.dogGameObject.transform.Find("Armature").Find("torso");
-			Transform dogHead = this.dogTorso.Find("head");
-			Transform dogArmL = this.dogTorso.Find("arm.L");
-			Transform dogArmR = this.dogTorso.Find("arm.R");
-			Transform dogLegL = this.dogTorso.Find("butt").Find("leg.L");
-			Transform dogLegR = this.dogTorso.Find("butt").Find("leg.R");
+				Debug.LogError(PlayerModelReplacer.exceptionMessage);
+				Debug.LogException(PlayerModelReplacer.exception);
+			}
 
-			Transform humanPelvis = this.transform.Find("ScavengerModel").Find("metarig").Find("spine");
-			Transform humanHead = humanPelvis.Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
-			Transform humanLegL = humanPelvis.Find("thigh.L");
-			Transform humanLegR = humanPelvis.Find("thigh.R");
+			try
+			{
+				// Set up the anim correspondence with Constraints.
+				this.dogTorso = this.dogGameObject.transform.Find("Armature").Find("torso");
+				Transform dogHead = this.dogTorso.Find("head");
+				Transform dogArmL = this.dogTorso.Find("arm.L");
+				Transform dogArmR = this.dogTorso.Find("arm.R");
+				Transform dogLegL = this.dogTorso.Find("butt").Find("leg.L");
+				Transform dogLegR = this.dogTorso.Find("butt").Find("leg.R");
 
-			// Add Constraints.
-			this.torsoConstraint = this.dogTorso.gameObject.AddComponent<PositionConstraint>();
-			this.torsoConstraint.AddSource(new ConstraintSource() { sourceTransform = humanPelvis, weight = 1 });
-			this.torsoConstraint.translationAtRest = this.dogTorso.localPosition;
-			this.torsoConstraint.translationOffset = this.dogTorso.InverseTransformPoint(humanPelvis.position);
-			this.torsoConstraint.constraintActive = true;
-			this.torsoConstraint.locked = true;
+				Transform humanPelvis = this.transform.Find("ScavengerModel").Find("metarig").Find("spine");
+				Transform humanHead = humanPelvis.Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
+				Transform humanLegL = humanPelvis.Find("thigh.L");
+				Transform humanLegR = humanPelvis.Find("thigh.R");
 
-			// Note: the rotation offsets are not set because the model bones have the same rotation as the associated bones.
-			RotationConstraint headConstraint = dogHead.gameObject.AddComponent<RotationConstraint>();
-			headConstraint.AddSource(new ConstraintSource() { sourceTransform = humanHead, weight = 1 });
-			headConstraint.rotationAtRest = dogHead.localEulerAngles;
-			headConstraint.constraintActive = true;
-			headConstraint.locked = true;
+				try
+				{
+					// Add Constraints.
+					this.torsoConstraint = this.dogTorso.gameObject.AddComponent<PositionConstraint>();
+					this.torsoConstraint.AddSource(new ConstraintSource() { sourceTransform = humanPelvis, weight = 1 });
+					this.torsoConstraint.translationAtRest = this.dogTorso.localPosition;
+					this.torsoConstraint.translationOffset = this.dogTorso.InverseTransformPoint(humanPelvis.position);
+					this.torsoConstraint.constraintActive = true;
+					this.torsoConstraint.locked = true;
 
-			RotationConstraint armLConstraint = dogArmL.gameObject.AddComponent<RotationConstraint>();
-			armLConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegR, weight = 1 });
-			armLConstraint.rotationAtRest = dogArmL.localEulerAngles;
-			armLConstraint.constraintActive = true;
-			armLConstraint.locked = true;
+					// Note: the rotation offsets are not set because the model bones have the same rotation as the associated bones.
+					RotationConstraint headConstraint = dogHead.gameObject.AddComponent<RotationConstraint>();
+					headConstraint.AddSource(new ConstraintSource() { sourceTransform = humanHead, weight = 1 });
+					headConstraint.rotationAtRest = dogHead.localEulerAngles;
+					headConstraint.constraintActive = true;
+					headConstraint.locked = true;
 
-			RotationConstraint armRConstraint = dogArmR.gameObject.AddComponent<RotationConstraint>();
-			armRConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegL, weight = 1 });
-			armRConstraint.rotationAtRest = dogArmR.localEulerAngles;
-			armRConstraint.constraintActive = true;
-			armRConstraint.locked = true;
+					RotationConstraint armLConstraint = dogArmL.gameObject.AddComponent<RotationConstraint>();
+					armLConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegR, weight = 1 });
+					armLConstraint.rotationAtRest = dogArmL.localEulerAngles;
+					armLConstraint.constraintActive = true;
+					armLConstraint.locked = true;
 
-			RotationConstraint legLConstraint = dogLegL.gameObject.AddComponent<RotationConstraint>();
-			legLConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegL, weight = 1 });
-			legLConstraint.rotationAtRest = dogLegL.localEulerAngles;
-			legLConstraint.constraintActive = true;
-			legLConstraint.locked = true;
+					RotationConstraint armRConstraint = dogArmR.gameObject.AddComponent<RotationConstraint>();
+					armRConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegL, weight = 1 });
+					armRConstraint.rotationAtRest = dogArmR.localEulerAngles;
+					armRConstraint.constraintActive = true;
+					armRConstraint.locked = true;
 
-			RotationConstraint legRConstraint = dogLegR.gameObject.AddComponent<RotationConstraint>();
-			legRConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegR, weight = 1 });
-			legRConstraint.rotationAtRest = dogLegR.localEulerAngles;
-			legRConstraint.constraintActive = true;
-			legRConstraint.locked = true;
+					RotationConstraint legLConstraint = dogLegL.gameObject.AddComponent<RotationConstraint>();
+					legLConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegL, weight = 1 });
+					legLConstraint.rotationAtRest = dogLegL.localEulerAngles;
+					legLConstraint.constraintActive = true;
+					legLConstraint.locked = true;
 
-			// Fetch the anchors for the items.
-			this.serverItemAnchor = dogHead.Find("serverItem");
-			this.localItemAnchor = dogHead.Find("localItem");
+					RotationConstraint legRConstraint = dogLegR.gameObject.AddComponent<RotationConstraint>();
+					legRConstraint.AddSource(new ConstraintSource() { sourceTransform = humanLegR, weight = 1 });
+					legRConstraint.rotationAtRest = dogLegR.localEulerAngles;
+					legRConstraint.constraintActive = true;
+					legRConstraint.locked = true;
+				}
+				catch (System.Exception e)
+				{
+					PlayerModelReplacer.exceptionMessage = "Failed to set up the constraints.";
+					PlayerModelReplacer.exception = e;
+
+					Debug.LogError(PlayerModelReplacer.exceptionMessage);
+					Debug.LogException(PlayerModelReplacer.exception);
+				}
+
+				// Fetch the anchors for the items.
+				this.serverItemAnchor = dogHead.Find("serverItem");
+				this.localItemAnchor = dogHead.Find("localItem");
+			}
+			catch (System.Exception e)
+			{
+				PlayerModelReplacer.exceptionMessage = "Failed to retrieve bones. What the hell?";
+				PlayerModelReplacer.exception = e;
+
+				Debug.LogError(PlayerModelReplacer.exceptionMessage);
+				Debug.LogException(PlayerModelReplacer.exception);
+			}
 
 			// Get a handy list of gameobjects to disable.
 			this.humanGameObjects = new GameObject[6];
@@ -259,10 +331,13 @@ namespace PlayerDogModel
 				this.playerController.movementAudio.PlayOneShot(PlayerModelReplacer.humanClip);
 			}
 
-			if (PlayerModelReplacer.healthFill)
+			if (this.playerController.IsLocalPlayer)
 			{
-				PlayerModelReplacer.healthFill.sprite = PlayerModelReplacer.humanFill;
-				PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.humanOutline;
+				if (PlayerModelReplacer.healthFill)
+				{
+					PlayerModelReplacer.healthFill.sprite = PlayerModelReplacer.humanFill;
+					PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.humanOutline;
+				}
 			}
 		}
 
@@ -285,21 +360,30 @@ namespace PlayerDogModel
 				this.playerController.movementAudio.PlayOneShot(PlayerModelReplacer.dogClip);
 			}
 
-			if (!PlayerModelReplacer.healthFill)
+			if (this.playerController.IsLocalPlayer)
 			{
-				PlayerModelReplacer.healthFill = HUDManager.Instance.selfRedCanvasGroup.GetComponent<Image>();
-				PlayerModelReplacer.healthOutline = HUDManager.Instance.selfRedCanvasGroup.transform.parent.Find("Self").GetComponent<Image>();
+				if (!PlayerModelReplacer.healthFill)
+				{
+					PlayerModelReplacer.healthFill = HUDManager.Instance.selfRedCanvasGroup.GetComponent<Image>();
+					PlayerModelReplacer.healthOutline = HUDManager.Instance.selfRedCanvasGroup.transform.parent.Find("Self").GetComponent<Image>();
 
-				PlayerModelReplacer.humanFill = PlayerModelReplacer.healthFill.sprite;
-				PlayerModelReplacer.humanOutline = PlayerModelReplacer.healthOutline.sprite;
+					PlayerModelReplacer.humanFill = PlayerModelReplacer.healthFill.sprite;
+					PlayerModelReplacer.humanOutline = PlayerModelReplacer.healthOutline.sprite;
+				}
+
+				PlayerModelReplacer.healthFill.sprite = PlayerModelReplacer.dogFill;
+				PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.dogOutline;
 			}
-
-			PlayerModelReplacer.healthFill.sprite = PlayerModelReplacer.dogFill;
-			PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.dogOutline;
 		}
 
 		public void UpdateMaterial()
 		{
+			if (this.dogRenderers == null)
+			{
+				Debug.LogWarning($"Skipping material replacement on dog because there was an error earlier.");
+				return;
+			}
+
 			foreach (Renderer renderer in this.dogRenderers)
 			{
 				renderer.material = this.playerController.thisPlayerModel.material;
@@ -341,11 +425,22 @@ namespace PlayerDogModel
 
 		private static void LoadImageResources()
 		{
-			Texture2D filled = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<Texture2D>("assets/TPoseFilled.png");
-			PlayerModelReplacer.dogFill = Sprite.Create(filled, new Rect(0, 0, filled.width, filled.height), new Vector2(0.5f, 0.5f), 100f);
+			try
+			{
+				Texture2D filled = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<Texture2D>("assets/TPoseFilled.png");
+				PlayerModelReplacer.dogFill = Sprite.Create(filled, new Rect(0, 0, filled.width, filled.height), new Vector2(0.5f, 0.5f), 100f);
 
-			Texture2D outline = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<Texture2D>("assets/TPoseOutline.png");
-			PlayerModelReplacer.dogOutline = Sprite.Create(outline, new Rect(0, 0, outline.width, outline.height), new Vector2(0.5f, 0.5f), 100f);
+				Texture2D outline = LC_API.BundleAPI.BundleLoader.GetLoadedAsset<Texture2D>("assets/TPoseOutline.png");
+				PlayerModelReplacer.dogOutline = Sprite.Create(outline, new Rect(0, 0, outline.width, outline.height), new Vector2(0.5f, 0.5f), 100f);
+			}
+			catch (System.Exception e)
+			{
+				PlayerModelReplacer.exceptionMessage = "Failed to retrieve images.";
+				PlayerModelReplacer.exception = e;
+
+				Debug.LogError(PlayerModelReplacer.exceptionMessage);
+				Debug.LogException(PlayerModelReplacer.exception);
+			}
 		}
 
 		private static IEnumerator LoadAudioResources()

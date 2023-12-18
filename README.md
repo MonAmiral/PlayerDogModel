@@ -6,8 +6,11 @@
 ## Features:
 Replaces the player models with a dog model!
 - Use the helmets on the side of the suits rack to switch between dog and human model.
-- The mod should work in multiplayer with players who do not have it.
-- Ragdolls are not supported yet.
+- Replaces your 3D model, adjusts your height, updates the health UI.
+- Compatible with custom suits!
+- Compatible with 3rd person & mirror!
+- The mod works in multiplayer with players who do not have it. They will just see everyone as a human.
+- NOT compatible with other model-replacing mods: Lethal Creature, Custom model API, Lethal VRM, etc.
 
 ## Credits:
 - Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
@@ -44,3 +47,8 @@ Replaces the player models with a dog model!
 
 **[0.3.1]** 
 - Removed test code showing a sphere at a random position.
+
+**[0.3.2]**
+- Added compatibility with 3rd person & mirror.
+- Fixed UI health icon changing for everyone instead of the dog player.
+- Fixed error spam in the log. Improved logs in general for more clarity.
