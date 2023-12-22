@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using UnityEngine.Animations;
 
@@ -24,6 +25,15 @@ namespace PlayerDogModel
 			_harmony = new Harmony(PluginInfo.PLUGIN_GUID);
 			_harmony.PatchAll();
 			Logger.LogInfo($"{PluginInfo.PLUGIN_GUID} loaded");
+
+			LC_API.BundleAPI.BundleLoader.LoadAssetBundle(GetAssemblyFullPath("playerdog"));
+		}
+
+		private static string GetAssemblyFullPath(string additionalPath)
+		{
+			string directoryName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			string path = ((additionalPath != null) ? Path.Combine(directoryName, ".\\" + additionalPath) : directoryName);
+			return Path.GetFullPath(path);
 		}
 
 		// PlayerModelReplacer handles the model and its toggling.
