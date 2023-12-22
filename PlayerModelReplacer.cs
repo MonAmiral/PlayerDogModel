@@ -402,11 +402,11 @@ namespace PlayerDogModel
 
 		public void BroadcastSelectedModel(bool playAudio)
 		{
-			Debug.Log($"Sent dog={this.isDogActive} on {this.playerController.playerUsername}.");
+			Debug.Log($"Sent dog={this.isDogActive} on {this.playerController.playerSteamId} ({this.playerController.playerUsername}).");
 
 			ToggleData data = new ToggleData()
 			{
-				owner = this.playerController.playerUsername,
+				ownerSteamId = this.playerController.playerSteamId,
 				isDog = this.isDogActive,
 				playAudio = playAudio,
 			};
@@ -474,14 +474,14 @@ namespace PlayerDogModel
 				case "modelswitch":
 					if (!this.dogGameObject)
 					{
-						Debug.LogError("Dog is unset. Can't toggle it.");
+						Debug.LogError("Dog encountered an error when it was initialized and it can't be toggled. Check the log for more info.");
 						return;
 					}
 
 					ToggleData toggleData = JsonConvert.DeserializeObject<ToggleData>(data);
-					if (this.playerController.playerUsername == toggleData.owner)
+					if (this.playerController.playerSteamId == toggleData.ownerSteamId)
 					{
-						Debug.Log($"Received dog={toggleData.isDog} for {this.playerController.playerUsername}.");
+						Debug.Log($"Received dog={toggleData.isDog} for {this.playerController.playerSteamId} ({this.playerController.playerUsername}).");
 
 						if (toggleData.isDog)
 						{
@@ -505,7 +505,7 @@ namespace PlayerDogModel
 		internal class ToggleData
 		{
 			[JsonProperty]
-			public string owner
+			public ulong ownerSteamId
 			{
 				get;
 				set;
