@@ -56,3 +56,9 @@ Replaces the player models with a dog model!
 **[1.0.0]**
 - Complete release!
 - Fixed UI issue.
+
+**[1.0.1]**
+- Fixed error introduced with LC_API 3.0.0. It is now the required version.
+
+**[1.0.2]**
+- Fixed dogs not being visible when using Steam nicknames.
