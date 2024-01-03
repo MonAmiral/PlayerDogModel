@@ -1,14 +1,11 @@
 using GameNetcodeStuff;
-using UnityEngine.Rendering.HighDefinition;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Animations;
-using System.Threading.Tasks;
 using UnityEngine.Networking;
 using System.IO;
 using System.Reflection;
 using System.Collections;
-using LC_API.ServerAPI;
 using Newtonsoft.Json;
 
 namespace PlayerDogModel
@@ -19,6 +16,11 @@ namespace PlayerDogModel
 	public class PlayerModelReplacer : MonoBehaviour
 	{
 		public static PlayerModelReplacer LocalReplacer;
+
+		public ulong PlayerClientId => playerController != null ? playerController.playerClientId : 0xffff_ffff_ffff_fffful;
+		public string PlayerUsername => playerController != null ? playerController.playerUsername : "";
+		public bool IsValid => dogGameObject != null;
+
 		private static bool loaded;
 		private static string exceptionMessage;
 		private static System.Exception exception;
@@ -62,6 +64,7 @@ namespace PlayerDogModel
 		private void Start()
 		{
 			this.playerController = this.GetComponent<PlayerControllerB>();
+
 			if (this.playerController.IsOwner)
 			{
 				PlayerModelReplacer.LocalReplacer = this;
@@ -73,8 +76,6 @@ namespace PlayerDogModel
 
 			this.SpawnDogModel();
 			this.EnableHumanModel(false);
-
-			Networking.GetString += this.Networking_GetString;
 		}
 
 		private void Update()
@@ -309,7 +310,7 @@ namespace PlayerDogModel
 			this.humanGameObjects[5] = this.playerController.playerBetaBadgeMesh.transform.parent.Find("LevelSticker").gameObject;
 		}
 
-		private void EnableHumanModel(bool playAudio = true)
+		public void EnableHumanModel(bool playAudio = true)
 		{
 			this.isDogActive = false;
 
@@ -337,7 +338,7 @@ namespace PlayerDogModel
 			}
 		}
 
-		private void EnableDogModel(bool playAudio = true)
+		public void EnableDogModel(bool playAudio = true)
 		{
 			this.isDogActive = true;
 
@@ -402,21 +403,21 @@ namespace PlayerDogModel
 
 		public void BroadcastSelectedModel(bool playAudio)
 		{
-			Debug.Log($"Sent dog={this.isDogActive} on {this.playerController.playerSteamId} ({this.playerController.playerUsername}).");
+			Debug.Log($"Sent dog={this.isDogActive} on {this.playerController.playerClientId} ({this.playerController.playerUsername}).");
 
 			ToggleData data = new ToggleData()
 			{
-				ownerSteamId = this.playerController.playerSteamId,
+				playerClientId = this.PlayerClientId,
 				isDog = this.isDogActive,
 				playAudio = playAudio,
 			};
 
-			Networking.Broadcast(JsonConvert.SerializeObject(data), "modelswitch");
+			LC_API.Networking.Network.Broadcast(Networking.ModelSwitchMessageName, data);
 		}
 
 		public static void RequestSelectedModelBroadcast()
 		{
-			Networking.Broadcast("hello this is dog", "modelinfo");
+			LC_API.Networking.Network.Broadcast(Networking.ModelInfoMessageName);
 		}
 
 		private static void LoadImageResources()
@@ -467,45 +468,11 @@ namespace PlayerDogModel
 			return Path.GetFullPath(path);
 		}
 
-		private void Networking_GetString(string data, string signature)
-		{
-			switch (signature)
-			{
-				case "modelswitch":
-					if (!this.dogGameObject)
-					{
-						Debug.LogError("Dog encountered an error when it was initialized and it can't be toggled. Check the log for more info.");
-						return;
-					}
-
-					ToggleData toggleData = JsonConvert.DeserializeObject<ToggleData>(data);
-					if (this.playerController.playerSteamId == toggleData.ownerSteamId)
-					{
-						Debug.Log($"Received dog={toggleData.isDog} for {this.playerController.playerSteamId} ({this.playerController.playerUsername}).");
-
-						if (toggleData.isDog)
-						{
-							this.EnableDogModel(toggleData.playAudio);
-						}
-						else
-						{
-							this.EnableHumanModel(toggleData.playAudio);
-						}
-					}
-
-					break;
-
-				case "modelinfo":
-					this.BroadcastSelectedModel(false);
-					break;
-			}
-		}
-
 		[JsonObject]
 		internal class ToggleData
 		{
 			[JsonProperty]
-			public ulong ownerSteamId
+			public ulong playerClientId
 			{
 				get;
 				set;
