@@ -62,3 +62,6 @@ Replaces the player models with a dog model!
 
 **[1.0.2]**
 - Fixed dogs not being visible when using Steam nicknames.
+
+**[1.0.3]**
+- Fixed models not syncing due to changes introduced with LC_API 3.2. It is now the minimum required version.
