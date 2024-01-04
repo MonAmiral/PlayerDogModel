@@ -15,6 +15,7 @@ Replaces the player models with a dog model!
 ## Credits:
 - Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
 - Originated from a design by EndlessForebode: https://twitter.com/UslurpArt/status/1724137874717573268
+- LC_API 3.2 fix by juanjp600. Thank you very much!
 
 ![](https://pbs.twimg.com/media/F-1eD_IWYAAwKmh.jpg)
 
