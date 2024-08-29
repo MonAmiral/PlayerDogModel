@@ -7,62 +7,62 @@ using UnityEngine;
 namespace PlayerDogModel.Patches
 {
 
-    public static class MoreCompanyPatch
-    {
-        public static void HideCosmeticsForPlayer(PlayerControllerB playerController)
-        {
-            CosmeticApplication cosmeticApplication = playerController.meshContainer.GetComponentInChildren<CosmeticApplication>();
+	public static class MoreCompanyPatch
+	{
+		public static void HideCosmeticsForPlayer(PlayerControllerB playerController)
+		{
+			CosmeticApplication cosmeticApplication = playerController.meshContainer.GetComponentInChildren<CosmeticApplication>();
 
-            Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
+			Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
 
-            if (cosmeticApplication == null)
-            {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance was null!");
-                return;
-            }
+			if (cosmeticApplication == null)
+			{
+				Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance was null!");
+				return;
+			}
 
-            cosmeticApplication.ClearCosmetics();
+			cosmeticApplication.ClearCosmetics();
 
-            List<string> selectedCosmetics = MainClass.playerIdsAndCosmetics[(int)playerController.playerClientId];
-            foreach (var selected in selectedCosmetics)
-            {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: Disabling {playerController.playerUsername}'s {selected}...");
-                cosmeticApplication.ApplyCosmetic(selected, false);
-            }
+			List<string> selectedCosmetics = MainClass.playerIdsAndCosmetics[(int)playerController.playerClientId];
+			foreach (var selected in selectedCosmetics)
+			{
+				Debug.Log($"{PluginInfo.PLUGIN_GUID}: Disabling {playerController.playerUsername}'s {selected}...");
+				cosmeticApplication.ApplyCosmetic(selected, false);
+			}
 
-            cosmeticApplication.RefreshAllCosmeticPositions();
-            foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)
-            {
-                cosmetic.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
-            }
-        }
+			cosmeticApplication.RefreshAllCosmeticPositions();
+			foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)
+			{
+				cosmetic.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
+			}
+		}
 
-        public static void ShowCosmeticsForPlayer(PlayerControllerB playerController)
-        {
-            CosmeticApplication cosmeticApplication = playerController.meshContainer.GetComponentInChildren<CosmeticApplication>();
+		public static void ShowCosmeticsForPlayer(PlayerControllerB playerController)
+		{
+			CosmeticApplication cosmeticApplication = playerController.meshContainer.GetComponentInChildren<CosmeticApplication>();
 
-            Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
+			Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
 
-            if (cosmeticApplication == null)
-            {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance was null!");
-                return;
-            }
+			if (cosmeticApplication == null)
+			{
+				Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance was null!");
+				return;
+			}
 
-            cosmeticApplication.ClearCosmetics();
-            List<string> selectedCosmetics = MainClass.playerIdsAndCosmetics[(int)playerController.playerClientId];
-            foreach (var selected in selectedCosmetics)
-            {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: Enabling {playerController.playerUsername}'s {selected}...");
-                cosmeticApplication.ApplyCosmetic(selected, true);
-            }
+			cosmeticApplication.ClearCosmetics();
+			List<string> selectedCosmetics = MainClass.playerIdsAndCosmetics[(int)playerController.playerClientId];
+			foreach (var selected in selectedCosmetics)
+			{
+				Debug.Log($"{PluginInfo.PLUGIN_GUID}: Enabling {playerController.playerUsername}'s {selected}...");
+				cosmeticApplication.ApplyCosmetic(selected, true);
+			}
 
-            cosmeticApplication.RefreshAllCosmeticPositions();
-            foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)
-            {
-                cosmetic.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
+			cosmeticApplication.RefreshAllCosmeticPositions();
+			foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)
+			{
+				cosmetic.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
 
-            }
-        }
-    }
+			}
+		}
+	}
 }

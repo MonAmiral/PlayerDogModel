@@ -12,9 +12,9 @@ using PlayerDogModel.Patches;
 
 namespace PlayerDogModel
 {
-    // By default, LateUpdate is called in a chaotic order: GrabbableObject can execute it before or after PlayerModelReplacer.
-    // Forcing the Execution Order to this value will ensure PlayerModelReplacer updates the anchor first and THEN only the GrabbableObject will update its position.
-    [DefaultExecutionOrder(-1)]
+	// By default, LateUpdate is called in a chaotic order: GrabbableObject can execute it before or after PlayerModelReplacer.
+	// Forcing the Execution Order to this value will ensure PlayerModelReplacer updates the anchor first and THEN only the GrabbableObject will update its position.
+	[DefaultExecutionOrder(-1)]
 	public class PlayerModelReplacer : MonoBehaviour
 	{
 		public static PlayerModelReplacer LocalReplacer;
@@ -339,11 +339,11 @@ namespace PlayerDogModel
 				}
 			}
 
-            if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
-            {
-                MoreCompanyPatch.ShowCosmeticsForPlayer(playerController);
-            }
-        }
+			if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
+			{
+				MoreCompanyPatch.ShowCosmeticsForPlayer(playerController);
+			}
+		}
 
 		public void EnableDogModel(bool playAudio = true)
 		{
@@ -379,10 +379,10 @@ namespace PlayerDogModel
 				PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.dogOutline;
 			}
 
-            if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
-            {
-                MoreCompanyPatch.HideCosmeticsForPlayer(playerController);
-            }
+			if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
+			{
+				MoreCompanyPatch.HideCosmeticsForPlayer(playerController);
+			}
 		}
 
 		public void UpdateMaterial()
