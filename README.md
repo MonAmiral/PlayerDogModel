@@ -16,6 +16,7 @@ Replaces the player models with a dog model!
 - Based on DarnHyena's LethalCreatures mod, which is based on code by Zoomy: https://github.com/DarnHyena/LethalCreatures
 - Originated from a design by EndlessForebode: https://twitter.com/UslurpArt/status/1724137874717573268
 - LC_API 3.2 fix by juanjp600. Thank you very much!
+- LC_API_V50 update and MoreCompany patch by wongnata! Cheers!
 
 ![](https://pbs.twimg.com/media/F-1eD_IWYAAwKmh.jpg)
 
@@ -66,3 +67,6 @@ Replaces the player models with a dog model!
 
 **[1.0.3]**
 - Fixed models not syncing due to changes introduced with LC_API 3.2. It is now the minimum required version.
+
+**[1.1.0]**
+- Updated to LC_API_V50. Added compatibility with MoreCompany which hides cosmetics when in dog mode.
