@@ -8,13 +8,13 @@ using System.Reflection;
 using System.Collections;
 using Newtonsoft.Json;
 using BepInEx.Bootstrap;
-using PlayerDogModel.Patches.MoreCompanyPatch;
+using PlayerDogModel.Patches;
 
 namespace PlayerDogModel
 {
-	// By default, LateUpdate is called in a chaotic order: GrabbableObject can execute it before or after PlayerModelReplacer.
-	// Forcing the Execution Order to this value will ensure PlayerModelReplacer updates the anchor first and THEN only the GrabbableObject will update its position.
-	[DefaultExecutionOrder(-1)]
+    // By default, LateUpdate is called in a chaotic order: GrabbableObject can execute it before or after PlayerModelReplacer.
+    // Forcing the Execution Order to this value will ensure PlayerModelReplacer updates the anchor first and THEN only the GrabbableObject will update its position.
+    [DefaultExecutionOrder(-1)]
 	public class PlayerModelReplacer : MonoBehaviour
 	{
 		public static PlayerModelReplacer LocalReplacer;
@@ -339,10 +339,9 @@ namespace PlayerDogModel
 				}
 			}
 
-			// Add cosmetic toggling support when using MoreCompany
             if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
             {
-                EnableHumanModelPatch.ShowMoreCompanyCosmeticsForPlayer(playerController);
+                MoreCompanyPatch.ShowCosmeticsForPlayer(playerController);
             }
         }
 
@@ -380,10 +379,9 @@ namespace PlayerDogModel
 				PlayerModelReplacer.healthOutline.sprite = PlayerModelReplacer.dogOutline;
 			}
 
-            // Add cosmetic toggling support when using MoreCompany
             if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
             {
-                EnableDogModelPatch.HideMoreCompanyCosmeticsForPlayer(playerController);
+                MoreCompanyPatch.HideCosmeticsForPlayer(playerController);
             }
 		}
 

@@ -4,20 +4,20 @@ using MoreCompany.Cosmetics;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PlayerDogModel.Patches.MoreCompanyPatch
+namespace PlayerDogModel.Patches
 {
 
-    static class EnableDogModelPatch
+    public static class MoreCompanyPatch
     {
-        public static void HideMoreCompanyCosmeticsForPlayer(PlayerControllerB playerController)
+        public static void HideCosmeticsForPlayer(PlayerControllerB playerController)
         {
             CosmeticApplication cosmeticApplication = playerController.meshContainer.GetComponentInChildren<CosmeticApplication>();
 
-            Debug.Log($"{PluginInfo.PLUGIN_GUID}: This cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
+            Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
 
             if (cosmeticApplication == null)
             {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: cosmeticApplication was null!");
+                Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance was null!");
                 return;
             }
 
@@ -26,7 +26,7 @@ namespace PlayerDogModel.Patches.MoreCompanyPatch
             List<string> selectedCosmetics = MainClass.playerIdsAndCosmetics[(int)playerController.playerClientId];
             foreach (var selected in selectedCosmetics)
             {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: Disabling {playerController.playerUsername}'s cosmetics...");
+                Debug.Log($"{PluginInfo.PLUGIN_GUID}: Disabling {playerController.playerUsername}'s {selected}...");
                 cosmeticApplication.ApplyCosmetic(selected, false);
             }
 
@@ -36,19 +36,16 @@ namespace PlayerDogModel.Patches.MoreCompanyPatch
                 cosmetic.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
             }
         }
-    }
 
-    static class EnableHumanModelPatch
-    {
-        public static void ShowMoreCompanyCosmeticsForPlayer(PlayerControllerB playerController)
+        public static void ShowCosmeticsForPlayer(PlayerControllerB playerController)
         {
             CosmeticApplication cosmeticApplication = playerController.meshContainer.GetComponentInChildren<CosmeticApplication>();
 
-            Debug.Log($"{PluginInfo.PLUGIN_GUID}: This cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
+            Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance ID was {cosmeticApplication.GetInstanceID()}");
 
             if (cosmeticApplication == null)
             {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: cosmeticApplication was null!");
+                Debug.Log($"{PluginInfo.PLUGIN_GUID}: {playerController.playerUsername}'s cosmetic application's instance was null!");
                 return;
             }
 
@@ -56,7 +53,7 @@ namespace PlayerDogModel.Patches.MoreCompanyPatch
             List<string> selectedCosmetics = MainClass.playerIdsAndCosmetics[(int)playerController.playerClientId];
             foreach (var selected in selectedCosmetics)
             {
-                Debug.Log($"{PluginInfo.PLUGIN_GUID}: Enabling {playerController.playerUsername}'s cosmetics...");
+                Debug.Log($"{PluginInfo.PLUGIN_GUID}: Enabling {playerController.playerUsername}'s {selected}...");
                 cosmeticApplication.ApplyCosmetic(selected, true);
             }
 
@@ -64,6 +61,7 @@ namespace PlayerDogModel.Patches.MoreCompanyPatch
             foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)
             {
                 cosmetic.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
+
             }
         }
     }
